@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { tr } from '@/lib/i18n';
 import { useMe } from '@/components/admin/AdminShell';
+import { useT } from '@/components/admin/i18n';
 
 type Stats = {
   days: { day: string; scans: number }[];
@@ -15,11 +16,12 @@ type Stats = {
 
 export default function Overview() {
   const me = useMe();
+  const { t } = useT();
   const [s, setS] = useState<Stats | null>(null);
   useEffect(() => {
     api<Stats>('GET', '/api/admin/stats').then(setS).catch(() => {});
   }, []);
-  if (!s) return <p className="muted">Loading…</p>;
+  if (!s) return <p className="muted">{t('Loading…')}</p>;
 
   const total = s.days.reduce((a, d) => a + d.scans, 0);
   const max = Math.max(1, ...s.days.map((d) => d.scans));
@@ -27,29 +29,29 @@ export default function Overview() {
 
   return (
     <>
-      <h1>Overview</h1>
+      <h1>{t('Overview')}</h1>
       <div className="kpis">
         <div className="kpi">
           <b>{today}</b>
-          <span>menu scans today</span>
+          <span>{t('menu scans today')}</span>
         </div>
         <div className="kpi">
           <b>{total}</b>
-          <span>scans in the last 14 days</span>
+          <span>{t('scans in the last 14 days')}</span>
         </div>
         <div className="kpi">
           <b>{s.counts.dishes}</b>
-          <span>dishes in {s.counts.categories} categories</span>
+          <span>{t('dishes in {n} categories', { n: s.counts.categories })}</span>
         </div>
         <div className="kpi">
           <b>{s.counts.sold_out}</b>
-          <span>marked sold out</span>
+          <span>{t('marked sold out')}</span>
         </div>
       </div>
 
       <section className="card">
-        <h2>Scans per day</h2>
-        <div className="bars" role="img" aria-label="Menu scans per day, last 14 days">
+        <h2>{t('Scans per day')}</h2>
+        <div className="bars" role="img" aria-label={t('Menu scans per day, last 14 days')}>
           {s.days.map((d) => (
             <div key={d.day} className="bar-col" title={`${d.day}: ${d.scans}`}>
               <span className="bar-n">{d.scans || ''}</span>
@@ -62,9 +64,9 @@ export default function Overview() {
 
       <div className="grid2">
         <section className="card">
-          <h2>Most opened dishes (30 days)</h2>
+          <h2>{t('Most opened dishes (30 days)')}</h2>
           {s.dishes.length === 0 ? (
-            <p className="muted">No data yet. It fills in as guests tap dishes.</p>
+            <p className="muted">{t('No data yet. It fills in as guests tap dishes.')}</p>
           ) : (
             <ol className="rank">
               {s.dishes.map((d) => (
@@ -77,15 +79,15 @@ export default function Overview() {
           )}
         </section>
         <section className="card">
-          <h2>Busiest tables (30 days)</h2>
+          <h2>{t('Busiest tables (30 days)')}</h2>
           {s.tables.length === 0 ? (
-            <p className="muted">No table QR scans yet. Print table codes from the QR page.</p>
+            <p className="muted">{t('No table QR scans yet. Print table codes from the QR page.')}</p>
           ) : (
             <ol className="rank">
-              {s.tables.map((t) => (
-                <li key={t.table_label}>
-                  <span>Table {t.table_label}</span>
-                  <b>{t.scans}</b>
+              {s.tables.map((tb) => (
+                <li key={tb.table_label}>
+                  <span>{t('Table')} {tb.table_label}</span>
+                  <b>{tb.scans}</b>
                 </li>
               ))}
             </ol>
@@ -94,17 +96,17 @@ export default function Overview() {
       </div>
 
       <section className="card">
-        <h2>Quick actions</h2>
+        <h2>{t('Quick actions')}</h2>
         <div className="row-wrap">
           <Link className="btn primary" href="/admin/menu">
-            Edit the menu
+            {t('Edit the menu')}
           </Link>
           <Link className="btn" href="/admin/qr">
-            Print QR codes
+            {t('Print QR codes')}
           </Link>
           {me?.role === 'owner' && (
             <Link className="btn" href="/admin/info">
-              Opening hours & contact
+              {t('Opening hours & contact')}
             </Link>
           )}
         </div>

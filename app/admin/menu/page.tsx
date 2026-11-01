@@ -6,6 +6,7 @@ import { formatPrice, tr } from '@/lib/i18n';
 import { api } from '@/lib/client';
 import { useMe } from '@/components/admin/AdminShell';
 import { ImagePicker, Modal, Switch, TextFields, useToast } from '@/components/admin/ui';
+import { useT } from '@/components/admin/i18n';
 
 type Cat = Category & { items: Item[] };
 type Data = { categories: Cat[]; deleted: Item[] };
@@ -20,6 +21,7 @@ export default function MenuEditor() {
   const me = useMe();
   const owner = me?.role === 'owner';
   const toast = useToast();
+  const { t } = useT();
   const [data, setData] = useState<Data | null>(null);
   const [editing, setEditing] = useState<Partial<Item> | null>(null);
   const [editingCat, setEditingCat] = useState<Partial<Cat> | null>(null);
@@ -50,23 +52,23 @@ export default function MenuEditor() {
     run(() => api('POST', '/api/admin/reorder', { kind, ids }));
   };
 
-  if (!data) return <p className="muted">Loading…</p>;
+  if (!data) return <p className="muted">{t('Loading…')}</p>;
   const q = filter.trim().toLowerCase();
 
   return (
     <>
       <div className="page-head">
-        <h1>Menu</h1>
+        <h1>{t('Menu')}</h1>
         <div className="row-wrap">
-          <input className="filter" placeholder="Find a dish…" value={filter} onChange={(e) => setFilter(e.target.value)} />
+          <input className="filter" placeholder={t('Find a dish…')} value={filter} onChange={(e) => setFilter(e.target.value)} />
           {owner && (
             <button className="btn" onClick={() => setEditingCat({ name: {}, note: {}, visible: true })}>
-              + Category
+              {t('+ Category')}
             </button>
           )}
         </div>
       </div>
-      {!owner && <p className="hint">You can mark dishes sold out and change prices. Other changes are made by the owner.</p>}
+      {!owner && <p className="hint">{t('You can mark dishes sold out and change prices. Other changes are made by the owner.')}</p>}
 
       {data.categories.map((c, ci) => {
         const items = q ? c.items.filter((it) => Object.values(it.name).some((v) => v?.toLowerCase().includes(q))) : c.items;
@@ -79,22 +81,22 @@ export default function MenuEditor() {
                   {tr(c.name, 'fr')} <span className="ar-inline">{c.name.ar}</span>
                 </h2>
                 <span className="muted small">
-                  {c.items.length} dishes{!c.visible && ' · hidden from guests'}
+                  {t('{n} dishes', { n: c.items.length })}{!c.visible && t(' · hidden from guests')}
                 </span>
               </div>
               {owner && (
                 <div className="row-wrap tight">
-                  <button className="icon-btn" title="Move up" onClick={() => move('categories', data.categories, ci, -1)} disabled={ci === 0}>
+                  <button className="icon-btn" title={t('Move up')} onClick={() => move('categories', data.categories, ci, -1)} disabled={ci === 0}>
                     ↑
                   </button>
-                  <button className="icon-btn" title="Move down" onClick={() => move('categories', data.categories, ci, 1)} disabled={ci === data.categories.length - 1}>
+                  <button className="icon-btn" title={t('Move down')} onClick={() => move('categories', data.categories, ci, 1)} disabled={ci === data.categories.length - 1}>
                     ↓
                   </button>
                   <button className="btn small ghost" onClick={() => setEditingCat(c)}>
-                    Edit
+                    {t('Edit')}
                   </button>
                   <button className="btn small primary" onClick={() => setEditing(emptyItem(c.id))}>
-                    + Dish
+                    {t('+ Dish')}
                   </button>
                 </div>
               )}
@@ -111,10 +113,10 @@ export default function MenuEditor() {
                       {it.name.ar && <span className="ar-inline">{it.name.ar}</span>}
                       {it.badges.map((x) => (
                         <span key={x} className="tag">
-                          {BADGE_LABELS[x]}
+                          {t(BADGE_LABELS[x])}
                         </span>
                       ))}
-                      {!it.visible && <span className="tag dark">Hidden</span>}
+                      {!it.visible && <span className="tag dark">{t('Hidden')}</span>}
                     </span>
                   </div>
                   <div className="item-price">
@@ -126,25 +128,25 @@ export default function MenuEditor() {
                   </div>
                   <Switch
                     checked={it.available}
-                    label={it.available ? 'Available' : 'Sold out'}
+                    label={it.available ? t('Available') : t('Sold out')}
                     onChange={(v) => patchItem(it.id, { available: v }, v ? 'Back on the menu' : 'Marked sold out')}
                   />
                   {owner && (
                     <div className="item-actions">
-                      <button className="icon-btn" title="Move up" onClick={() => move('items', c.items, c.items.indexOf(it), -1)} disabled={q !== '' || ii === 0}>
+                      <button className="icon-btn" title={t('Move up')} onClick={() => move('items', c.items, c.items.indexOf(it), -1)} disabled={q !== '' || ii === 0}>
                         ↑
                       </button>
-                      <button className="icon-btn" title="Move down" onClick={() => move('items', c.items, c.items.indexOf(it), 1)} disabled={q !== '' || ii === items.length - 1}>
+                      <button className="icon-btn" title={t('Move down')} onClick={() => move('items', c.items, c.items.indexOf(it), 1)} disabled={q !== '' || ii === items.length - 1}>
                         ↓
                       </button>
                       <button className="btn small ghost" onClick={() => setEditing(it)}>
-                        Edit
+                        {t('Edit')}
                       </button>
                     </div>
                   )}
                 </li>
               ))}
-              {items.length === 0 && <li className="muted small pad">No dishes yet.</li>}
+              {items.length === 0 && <li className="muted small pad">{t('No dishes yet.')}</li>}
             </ul>
           </section>
         );
@@ -152,8 +154,8 @@ export default function MenuEditor() {
 
       {owner && data.deleted.length > 0 && (
         <section className="card">
-          <h2>Recently deleted</h2>
-          <p className="muted small">Deleted dishes stay here so you can bring them back.</p>
+          <h2>{t('Recently deleted')}</h2>
+          <p className="muted small">{t('Deleted dishes stay here so you can bring them back.')}</p>
           <ul className="items">
             {data.deleted.map((it) => (
               <li key={it.id} className="item-row is-hidden">
@@ -161,7 +163,7 @@ export default function MenuEditor() {
                   <b>{tr(it.name, 'fr')}</b>
                 </span>
                 <button className="btn small" onClick={() => run(() => api('POST', `/api/admin/items/${it.id}/restore`), 'Dish restored')}>
-                  Restore
+                  {t('Restore')}
                 </button>
               </li>
             ))}
@@ -197,6 +199,7 @@ export default function MenuEditor() {
 }
 
 function PriceInput({ value, onSave }: { value: number | null; onSave: (v: number) => void }) {
+  const { t } = useT();
   const [v, setV] = useState(value === null ? '' : String(value));
   useEffect(() => setV(value === null ? '' : String(value)), [value]);
   const commit = () => {
@@ -211,7 +214,7 @@ function PriceInput({ value, onSave }: { value: number | null; onSave: (v: numbe
         onChange={(e) => setV(e.target.value.replace(/[^\d]/g, ''))}
         onBlur={commit}
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-        aria-label="Price in dinars"
+        aria-label={t('Price in dinars')}
       />
       <span>DA</span>
     </label>
@@ -224,6 +227,7 @@ function ItemForm({
   item: Partial<Item>; categories: Cat[]; onClose: () => void; onSaved: (msg: string) => void;
 }) {
   const toast = useToast();
+  const { t } = useT();
   const [f, setF] = useState<Partial<Item>>(item);
   const [busy, setBusy] = useState(false);
   const [multi, setMulti] = useState((item.sizes?.length ?? 0) > 0);
@@ -257,14 +261,14 @@ function ItemForm({
   const setSize = (i: number, p: Partial<Size>) => set({ sizes: sizes.map((s, j) => (j === i ? { ...s, ...p } : s)) });
 
   return (
-    <Modal title={isNew ? 'New dish' : `Edit ${tr(item.name, 'fr')}`} onClose={onClose}>
+    <Modal title={isNew ? t('New dish') : t('Edit {name}', { name: tr(item.name, 'fr') })} onClose={onClose}>
       <form onSubmit={save} className="form">
-        <TextFields label="Name" value={f.name ?? {}} onChange={(name) => set({ name })} required />
-        <TextFields label="Ingredients / description" value={f.description ?? {}} onChange={(description) => set({ description })} multiline />
+        <TextFields label={t('Name')} value={f.name ?? {}} onChange={(name) => set({ name })} required />
+        <TextFields label={t('Ingredients / description')} value={f.description ?? {}} onChange={(description) => set({ description })} multiline />
 
         <div className="grid2">
           <label>
-            Category
+            {t('Category')}
             <select value={f.categoryId} onChange={(e) => set({ categoryId: Number(e.target.value) })}>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -275,7 +279,7 @@ function ItemForm({
           </label>
           {!multi && (
             <label>
-              Price (DA)
+              {t('Price (DA)')}
               <input
                 inputMode="numeric"
                 required
@@ -286,30 +290,30 @@ function ItemForm({
           )}
         </div>
 
-        <Switch checked={multi} onChange={(v) => { setMulti(v); if (v && sizes.length === 0) set({ sizes: [{ label: { fr: 'Normale' }, price: f.price ?? 0 }, { label: { fr: 'Large' }, price: 0 }] }); }} label="Several sizes or options with different prices" />
+        <Switch checked={multi} onChange={(v) => { setMulti(v); if (v && sizes.length === 0) set({ sizes: [{ label: { fr: 'Normale' }, price: f.price ?? 0 }, { label: { fr: 'Large' }, price: 0 }] }); }} label={t('Several sizes or options with different prices')} />
         {multi && (
           <div className="sizes-edit">
             {sizes.map((s, i) => (
               <div key={i} className="size-row">
-                <input placeholder="Size (FR)" value={s.label.fr ?? ''} onChange={(e) => setSize(i, { label: { ...s.label, fr: e.target.value } })} />
+                <input placeholder={t('Size (FR)')} value={s.label.fr ?? ''} onChange={(e) => setSize(i, { label: { ...s.label, fr: e.target.value } })} />
                 <input placeholder="الحجم (AR)" dir="rtl" value={s.label.ar ?? ''} onChange={(e) => setSize(i, { label: { ...s.label, ar: e.target.value } })} />
-                <input placeholder="Size (EN)" value={s.label.en ?? ''} onChange={(e) => setSize(i, { label: { ...s.label, en: e.target.value } })} />
+                <input placeholder={t('Size (EN)')} value={s.label.en ?? ''} onChange={(e) => setSize(i, { label: { ...s.label, en: e.target.value } })} />
                 <input inputMode="numeric" placeholder="DA" value={s.price || ''} onChange={(e) => setSize(i, { price: Number(e.target.value.replace(/\D/g, '')) })} />
-                <button type="button" className="icon-btn" onClick={() => set({ sizes: sizes.filter((_, j) => j !== i) })} aria-label="Remove size">
+                <button type="button" className="icon-btn" onClick={() => set({ sizes: sizes.filter((_, j) => j !== i) })} aria-label={t('Remove size')}>
                   ×
                 </button>
               </div>
             ))}
             <button type="button" className="btn small" onClick={() => set({ sizes: [...sizes, { label: {}, price: 0 }] })}>
-              + Add size
+              {t('+ Add size')}
             </button>
           </div>
         )}
 
-        <ImagePicker label="Photo" value={f.imageId ?? null} onChange={(imageId) => set({ imageId })} />
+        <ImagePicker label={t('Photo')} value={f.imageId ?? null} onChange={(imageId) => set({ imageId })} />
 
         <fieldset className="tf">
-          <legend>Badges</legend>
+          <legend>{t('Badges')}</legend>
           <div className="row-wrap">
             {(Object.keys(BADGE_LABELS) as Badge[]).map((b) => (
               <label key={b} className="check">
@@ -318,38 +322,38 @@ function ItemForm({
                   checked={f.badges?.includes(b) ?? false}
                   onChange={(e) => set({ badges: e.target.checked ? [...(f.badges ?? []), b] : (f.badges ?? []).filter((x) => x !== b) })}
                 />
-                {BADGE_LABELS[b]}
+                {t(BADGE_LABELS[b])}
               </label>
             ))}
           </div>
         </fieldset>
 
         <div className="row-wrap">
-          <Switch checked={f.available ?? true} onChange={(available) => set({ available })} label="Available today" />
-          <Switch checked={f.visible ?? true} onChange={(visible) => set({ visible })} label="Shown on the menu" />
+          <Switch checked={f.available ?? true} onChange={(available) => set({ available })} label={t('Available today')} />
+          <Switch checked={f.visible ?? true} onChange={(visible) => set({ visible })} label={t('Shown on the menu')} />
         </div>
 
         <div className="form-foot">
           {!isNew && (
             <div className="row-wrap tight">
               <button type="button" className="btn small ghost" onClick={() => action(() => api('POST', `/api/admin/items/${item.id}/duplicate`), 'Copy created (hidden until you show it)')}>
-                Duplicate
+                {t('Duplicate')}
               </button>
               <button
                 type="button"
                 className="btn small danger"
-                onClick={() => confirm('Delete this dish? You can restore it later.') && action(() => api('DELETE', `/api/admin/items/${item.id}`), 'Dish deleted')}
+                onClick={() => confirm(t('Delete this dish? You can restore it later.')) && action(() => api('DELETE', `/api/admin/items/${item.id}`), 'Dish deleted')}
               >
-                Delete
+                {t('Delete')}
               </button>
             </div>
           )}
           <span className="spacer" />
           <button type="button" className="btn ghost" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button className="btn primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save'}
+            {busy ? t('Saving…') : t('Save')}
           </button>
         </div>
       </form>
@@ -359,6 +363,7 @@ function ItemForm({
 
 function CategoryForm({ cat, onClose, onSaved }: { cat: Partial<Cat>; onClose: () => void; onSaved: (msg: string) => void }) {
   const toast = useToast();
+  const { t } = useT();
   const [name, setName] = useState<Text>(cat.name ?? {});
   const [note, setNote] = useState<Text>(cat.note ?? {});
   const [visible, setVisible] = useState(cat.visible ?? true);
@@ -374,7 +379,7 @@ function CategoryForm({ cat, onClose, onSaved }: { cat: Partial<Cat>; onClose: (
   };
 
   return (
-    <Modal title={isNew ? 'New category' : 'Edit category'} onClose={onClose}>
+    <Modal title={isNew ? t('New category') : t('Edit category')} onClose={onClose}>
       <form
         className="form"
         onSubmit={(e) => {
@@ -385,24 +390,24 @@ function CategoryForm({ cat, onClose, onSaved }: { cat: Partial<Cat>; onClose: (
           );
         }}
       >
-        <TextFields label="Name" value={name} onChange={setName} required />
-        <TextFields label="Short note under the title (optional)" value={note} onChange={setNote} />
-        {!isNew && <Switch checked={visible} onChange={setVisible} label="Shown on the menu" />}
+        <TextFields label={t('Name')} value={name} onChange={setName} required />
+        <TextFields label={t('Short note under the title (optional)')} value={note} onChange={setNote} />
+        {!isNew && <Switch checked={visible} onChange={setVisible} label={t('Shown on the menu')} />}
         <div className="form-foot">
           {!isNew && (
             <button
               type="button"
               className="btn small danger"
-              onClick={() => confirm('Delete this category?') && go(() => api('DELETE', `/api/admin/categories/${cat.id}`), 'Category deleted')}
+              onClick={() => confirm(t('Delete this category?')) && go(() => api('DELETE', `/api/admin/categories/${cat.id}`), 'Category deleted')}
             >
-              Delete
+              {t('Delete')}
             </button>
           )}
           <span className="spacer" />
           <button type="button" className="btn ghost" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
-          <button className="btn primary">Save</button>
+          <button className="btn primary">{t('Save')}</button>
         </div>
       </form>
     </Modal>

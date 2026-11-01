@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import type { Lang, Text } from '@/lib/types';
 import { LANG_NAMES } from '@/lib/i18n';
 import { uploadImage } from '@/lib/client';
+import { useT } from './i18n';
 
 type Toast = { id: number; msg: string; kind: 'ok' | 'err' };
 const ToastCtx = createContext<(msg: string, kind?: 'ok' | 'err') => void>(() => {});
@@ -12,11 +13,12 @@ export const useToast = () => useContext(ToastCtx);
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const n = useRef(0);
+  const { t } = useT();
   const push = useCallback((msg: string, kind: 'ok' | 'err' = 'ok') => {
     const id = ++n.current;
-    setToasts((t) => [...t, { id, msg, kind }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), kind === 'err' ? 6000 : 2500);
-  }, []);
+    setToasts((list) => [...list, { id, msg: t(msg), kind }]);
+    setTimeout(() => setToasts((list) => list.filter((x) => x.id !== id)), kind === 'err' ? 6000 : 2500);
+  }, [t]);
   return (
     <ToastCtx.Provider value={push}>
       {children}
@@ -37,6 +39,7 @@ export function TextFields({
 }: {
   label: string; value: Text; onChange: (v: Text) => void; multiline?: boolean; langs?: Lang[]; required?: boolean;
 }) {
+  const { t } = useT();
   return (
     <fieldset className="tf">
       <legend>{label}</legend>
@@ -45,7 +48,7 @@ export function TextFields({
           value: value[l] ?? '',
           dir: l === 'ar' ? 'rtl' : 'ltr',
           lang: l,
-          placeholder: l === 'fr' ? '' : `${LANG_NAMES[l]}  (empty = French text shown)`,
+          placeholder: l === 'fr' ? '' : `${LANG_NAMES[l]} ${t('(empty = French text shown)')}`,
           onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange({ ...value, [l]: e.target.value }),
           'aria-label': `${label} (${LANG_NAMES[l]})`,
           required: required && l === 'fr',
@@ -79,21 +82,22 @@ export function ImagePicker({
 }) {
   const [busy, setBusy] = useState(false);
   const toast = useToast();
+  const { t } = useT();
   const input = useRef<HTMLInputElement>(null);
   return (
     <div className={`imgpick ${wide ? 'wide' : ''}`}>
       <div className="imgpick-box" onClick={() => input.current?.click()}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {value ? <img src={`/api/img/${value}`} alt="" /> : <span>{busy ? 'Uploading…' : '+ Add photo'}</span>}
+        {value ? <img src={`/api/img/${value}`} alt="" /> : <span>{busy ? t('Uploading…') : t('+ Add photo')}</span>}
       </div>
       <div className="imgpick-actions">
         <span className="imgpick-label">{label}</span>
         <button type="button" className="btn small" onClick={() => input.current?.click()} disabled={busy}>
-          {busy ? 'Uploading…' : value ? 'Replace' : 'Upload'}
+          {busy ? t('Uploading…') : value ? t('Replace') : t('Upload')}
         </button>
         {value && (
           <button type="button" className="btn small ghost" onClick={() => onChange(null)}>
-            Remove
+            {t('Remove')}
           </button>
         )}
       </div>
@@ -121,12 +125,13 @@ export function ImagePicker({
 }
 
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const { t } = useT();
   return (
     <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
+          <button className="icon-btn" onClick={onClose} aria-label={t('Close')}>
             ×
           </button>
         </div>

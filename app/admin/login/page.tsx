@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/client';
+import { LangSwitch, useT } from '@/components/admin/i18n';
 
 export default function Login() {
+  const { t } = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [logo, setLogo] = useState(true);
 
   return (
     <div className="login-wrap">
@@ -21,25 +24,28 @@ export default function Login() {
             await api('POST', '/api/auth/login', { email, password });
             location.href = '/admin';
           } catch (err) {
-            setError((err as Error).message);
+            setError(t((err as Error).message));
             setBusy(false);
           }
         }}
       >
-        <div className="brand big">
-          PizzArt <small>admin</small>
+        <div className="login-top">
+          <LangSwitch />
         </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {logo ? <img className="login-logo" src="/api/logo" alt="PizzArt" onError={() => setLogo(false)} /> : <div className="brand-text big">PizzArt</div>}
+        <div className="login-sub">— {t('admin')} —</div>
         <label>
-          Email
+          {t('Email')}
           <input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </label>
         <label>
-          Password
+          {t('Password')}
           <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
         {error && <p className="error">{error}</p>}
         <button className="btn primary" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? t('Signing in…') : t('Sign in')}
         </button>
       </form>
     </div>

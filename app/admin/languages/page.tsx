@@ -4,12 +4,14 @@ import type { Lang, Languages } from '@/lib/types';
 import { LABELS, LANG_NAMES, type LabelKey } from '@/lib/i18n';
 import { Switch } from '@/components/admin/ui';
 import { useSetting } from '@/components/admin/useSetting';
+import { useT } from '@/components/admin/i18n';
 
 const ALL: Lang[] = ['fr', 'ar', 'en'];
 
 export default function LanguagesPage() {
   const { value: v, setValue, save, saving } = useSetting<Languages>('languages');
-  if (!v) return <p className="muted">Loading…</p>;
+  const { t } = useT();
+  if (!v) return <p className="muted">{t('Loading…')}</p>;
   const set = (p: Partial<Languages>) => setValue({ ...v, ...p });
 
   return (
@@ -21,14 +23,14 @@ export default function LanguagesPage() {
       }}
     >
       <div className="page-head">
-        <h1>Languages</h1>
+        <h1>{t('Languages')}</h1>
         <button className="btn primary" disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? t('Saving…') : t('Save')}
         </button>
       </div>
       <section className="card">
-        <h2>Languages on the menu</h2>
-        <p className="muted small">Guests switch language with the buttons at the top. Arabic turns the whole page right-to-left.</p>
+        <h2>{t('Languages on the menu')}</h2>
+        <p className="muted small">{t('Guests switch language with the buttons at the top. Arabic turns the whole page right-to-left.')}</p>
         {ALL.map((l) => (
           <Switch
             key={l}
@@ -38,7 +40,7 @@ export default function LanguagesPage() {
           />
         ))}
         <label>
-          Language shown first
+          {t('Language shown first')}
           <select value={v.default} onChange={(e) => set({ default: e.target.value as Lang })}>
             {v.enabled.map((l) => (
               <option key={l} value={l}>
@@ -49,8 +51,8 @@ export default function LanguagesPage() {
         </label>
       </section>
       <section className="card">
-        <h2>Words on the menu</h2>
-        <p className="muted small">Change any fixed word guests see. Leave a box empty to keep the default shown in grey.</p>
+        <h2>{t('Words on the menu')}</h2>
+        <p className="muted small">{t('Change any fixed word guests see. Leave a box empty to keep the default shown in grey.')}</p>
         <div className="labels-table">
           <div className="lt-head">
             {ALL.map((l) => (
