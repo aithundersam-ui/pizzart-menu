@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Badge, Category, Item, Size, Text } from '@/lib/types';
 import { formatPrice, tr } from '@/lib/i18n';
 import { api } from '@/lib/client';
-import { useMe } from '@/components/admin/AdminShell';
+import { isAdmin, useMe } from '@/components/admin/AdminShell';
 import { ImagePicker, Modal, Switch, TextFields, useToast } from '@/components/admin/ui';
 import { useT } from '@/components/admin/i18n';
 
@@ -19,7 +19,7 @@ const emptyItem = (categoryId: number): Partial<Item> => ({
 
 export default function MenuEditor() {
   const me = useMe();
-  const owner = me?.role === 'owner';
+  const owner = isAdmin(me);
   const toast = useToast();
   const { t } = useT();
   const [data, setData] = useState<Data | null>(null);

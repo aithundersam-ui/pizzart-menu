@@ -4,10 +4,15 @@ import { sql } from '@/lib/db';
 import { getSettings } from '@/lib/data';
 import { handler, requireUser } from '@/lib/api';
 
-/** The address printed in the QR codes: short and permanent, with an optional table number. */
-function menuUrl(origin: string, table: string) {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || origin).replace(/\/$/, '');
-  return `${base}/m${table ? `?t=${encodeURIComponent(table)}` : ''}`;
+/**
+ * The address printed in the QR codes: the address the admin is open on right now (so it always
+ * matches the live site, also after adding your own domain), with an optional table number.
+ */
+function menuUrl(req: Request, table: string) {
+  const u = new URL(req.url);
+  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || u.host).split(',')[0].trim();
+  const proto = (req.headers.get('x-forwarded-proto') || u.protocol.replace(':', '')).split(',')[0].trim();
+  return `${proto}://${host}/m${table ? `?t=${encodeURIComponent(table)}` : ''}`;
 }
 
 async function logoPng(): Promise<{ data: string; w: number; h: number } | null> {
@@ -50,7 +55,7 @@ export const GET = handler(async (req: Request) => {
   const u = new URL(req.url);
   const table = (u.searchParams.get('table') ?? '').replace(/[^\w-]/g, '').slice(0, 12);
   const format = u.searchParams.get('format') === 'png' ? 'png' : 'svg';
-  const url = menuUrl(u.origin, table);
+  const url = menuUrl(req, table);
   const svg = await qrSvg(url, '#1d1411');
   const name = `pizzart-qr${table ? `-table-${table}` : ''}`;
   const download = u.searchParams.get('download') === '1';

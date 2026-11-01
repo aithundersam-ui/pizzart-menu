@@ -1,5 +1,5 @@
-// Creates the tables, loads the starting menu on first run and creates the owner account.
-// Runs before every build and is safe to run again: it never overwrites the owner's edits.
+// Creates the tables, loads the starting menu on first run and creates the master admin account.
+// Runs before every build and is safe to run again: it never overwrites edits made in the admin.
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -38,6 +38,9 @@ async function storeImage(file, maxWidth) {
 
 async function main() {
   await sql.unsafe(await readFile(path.join(dir, 'schema.sql'), 'utf8'));
+  // Databases created before the master admin role existed: widen the role check.
+  await sql.unsafe(`alter table users drop constraint if exists users_role_check;
+    alter table users add constraint users_role_check check (role in ('master', 'owner', 'staff'))`);
   console.log('Schema ready.');
 
   const [{ count }] = await sql`select count(*)::int as count from categories`;
@@ -65,19 +68,25 @@ async function main() {
               on conflict (key) do nothing`;
   }
 
-  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  // The account in MASTER_EMAIL (or ADMIN_EMAIL when MASTER_EMAIL is not set) is the master admin:
+  // it can edit everything and is the only one who can add, edit and remove admin accounts.
+  const email = (process.env.MASTER_EMAIL || process.env.ADMIN_EMAIL)?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
-  if (email && password) {
-    const hash = await bcrypt.hash(password, 10);
-    const [existing] = await sql`select id from users where email = ${email}`;
-    if (!existing) {
-      await sql`insert into users (email, name, password_hash, role) values (${email}, 'Owner', ${hash}, 'owner')`;
-      console.log(`Owner account created for ${email}.`);
-    } else if (process.env.RESET_ADMIN_PASSWORD === 'true') {
-      await sql`update users set password_hash = ${hash} where id = ${existing.id}`;
+  const [existing] = email ? await sql`select id, role from users where email = ${email}` : [];
+  if (existing) {
+    if (existing.role !== 'master') {
+      await sql`update users set role = 'master' where id = ${existing.id}`;
+      console.log(`${email} is now the master admin.`);
+    }
+    if (password && process.env.RESET_ADMIN_PASSWORD === 'true') {
+      await sql`update users set password_hash = ${await bcrypt.hash(password, 10)} where id = ${existing.id}`;
       await sql`delete from login_attempts`;
       console.log(`Password reset for ${email}. Set RESET_ADMIN_PASSWORD back to false.`);
     }
+  } else if (email && password) {
+    await sql`insert into users (email, name, password_hash, role)
+              values (${email}, 'Master admin', ${await bcrypt.hash(password, 10)}, 'master')`;
+    console.log(`Master admin account created for ${email}.`);
   } else {
     const [{ users }] = await sql`select count(*)::int as users from users`;
     if (users === 0) console.warn('No admin account yet: set ADMIN_EMAIL and ADMIN_PASSWORD and run setup again.');

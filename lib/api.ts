@@ -11,12 +11,13 @@ export class HttpError extends Error {
 }
 
 /** The signed-in user, re-checked against the database so removed accounts lose access at once. */
-export async function requireUser(role?: 'owner'): Promise<Session> {
+export async function requireUser(role?: 'owner' | 'master'): Promise<Session> {
   const session = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!session) throw new HttpError(401, 'Not signed in');
   const [user] = await sql`select id, email, role from users where id = ${session.uid}`;
   if (!user) throw new HttpError(401, 'Account no longer exists');
-  if (role === 'owner' && user.role !== 'owner') throw new HttpError(403, 'Only the owner can do this');
+  if (role === 'owner' && user.role === 'staff') throw new HttpError(403, 'Only an admin can do this');
+  if (role === 'master' && user.role !== 'master') throw new HttpError(403, 'Only the master admin can do this');
   return { uid: user.id, email: user.email, role: user.role };
 }
 

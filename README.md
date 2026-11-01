@@ -3,8 +3,8 @@
 QR-code menu website and admin panel for **PizzArt**, Draria (Algiers).
 
 - **Guests** scan the QR code on the table and get the menu on their phone: French, Arabic (right-to-left) and English, prices in DA, search, dish photos, opening hours, call and directions buttons.
-- **The owner** signs in at `/admin` and edits everything: dishes, prices, sizes, photos, badges, sold-out status, categories and their order, restaurant info and hours, logo, colours, fonts, languages, the fixed words on the menu, staff accounts, and prints the QR codes.
-- **Staff accounts** can only mark dishes sold out and change prices.
+- **The master admin** signs in at `/admin` and edits everything: dishes, prices, sizes, photos, badges, sold-out status, categories and their order, restaurant info and hours, logo, colours, fonts, languages, the fixed words on the menu, staff accounts, and prints the QR codes.
+- **Accounts**: the master admin (the `ADMIN_EMAIL` account) can change everything and is the only one who can add, edit and remove accounts. Admins can change everything on the site. Staff can only mark dishes sold out and change prices.
 
 Built with Next.js 15 and any standard Postgres database. Photos are stored in the database (resized to small WebP files), so the only service needed besides hosting is Postgres.
 
@@ -18,12 +18,12 @@ Built with Next.js 15 and any standard Postgres database. Photos are stored in t
    | --- | --- |
    | `DATABASE_URL` | the Neon connection string |
    | `AUTH_SECRET` | a long random string, 40+ characters (signs the admin login) |
-   | `ADMIN_EMAIL` | the owner's email, used to sign in |
-   | `ADMIN_PASSWORD` | the owner's first password (change it later in Admin → Accounts) |
-   | `NEXT_PUBLIC_SITE_URL` | the site address, e.g. `https://pizzart-draria.netlify.app` or your own domain |
+   | `ADMIN_EMAIL` | the master admin's email, used to sign in |
+   | `ADMIN_PASSWORD` | the master admin's first password (change it later in Admin → Accounts) |
+   | `MASTER_EMAIL` | optional: makes a different, already existing account the master admin |
 
 4. **Deploy.** The first build creates the tables, loads the current menu and creates the owner account. Then open `/admin` and sign in.
-5. **Own domain (optional).** *Domain management → Add a domain*. Update `NEXT_PUBLIC_SITE_URL` and redeploy **before printing QR codes**, because the codes contain this address.
+5. **Own domain (optional).** *Domain management → Add a domain*. The QR codes contain the address the admin is open on, so open the admin on your own domain **before printing QR codes**.
 
 If you use Netlify DB instead of Neon, `NETLIFY_DATABASE_URL` is picked up automatically and `DATABASE_URL` can be left out.
 

@@ -7,7 +7,10 @@ import { api } from '@/lib/client';
 import { ToastProvider } from './ui';
 import { AdminI18nProvider, LangSwitch, useT } from './i18n';
 
-type Me = { uid: number; email: string; role: 'owner' | 'staff' };
+type Me = { uid: number; email: string; role: 'master' | 'owner' | 'staff' };
+/** Master and owner ("admin") can edit the whole site; staff only availability and prices. */
+export const isAdmin = (me: Me | null) => me?.role === 'master' || me?.role === 'owner';
+export const ROLE_LABEL = { master: 'Master admin', owner: 'Admin', staff: 'Staff' } as const;
 const MeCtx = createContext<Me | null>(null);
 export const useMe = () => useContext(MeCtx);
 
@@ -58,7 +61,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   if (isLogin) return <div className="admin">{children}</div>;
 
-  const items = NAV.filter((n) => me?.role === 'owner' || n.staff || n.href === '/admin');
+  const items = NAV.filter((n) => isAdmin(me) || n.staff || n.href === '/admin');
   return (
     <MeCtx.Provider value={me}>
       <div className="admin shell">
@@ -79,7 +82,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             </a>
             <div className="who">
               {me?.email}
-              <small>{me?.role === 'owner' ? t('Owner') : t('Staff')}</small>
+              <small>{me ? t(ROLE_LABEL[me.role]) : ''}</small>
             </div>
             <button
               className="btn small ghost"

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { tr } from '@/lib/i18n';
-import { useMe } from '@/components/admin/AdminShell';
+import { isAdmin, useMe } from '@/components/admin/AdminShell';
 import { useT } from '@/components/admin/i18n';
 
 type Stats = {
@@ -104,7 +104,7 @@ export default function Overview() {
           <Link className="btn" href="/admin/qr">
             {t('Print QR codes')}
           </Link>
-          {me?.role === 'owner' && (
+          {isAdmin(me) && (
             <Link className="btn" href="/admin/info">
               {t('Opening hours & contact')}
             </Link>

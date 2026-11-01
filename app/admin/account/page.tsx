@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
-import { useMe } from '@/components/admin/AdminShell';
+import { isAdmin, ROLE_LABEL, useMe } from '@/components/admin/AdminShell';
 import { useToast } from '@/components/admin/ui';
 import { useT } from '@/components/admin/i18n';
 
-type User = { id: number; email: string; name: string; role: 'owner' | 'staff' };
+type Role = 'master' | 'owner' | 'staff';
+type User = { id: number; email: string; name: string; role: Role };
+const ROLES: Role[] = ['staff', 'owner', 'master'];
 
 export default function AccountPage() {
   const me = useMe();
@@ -15,11 +17,12 @@ export default function AccountPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [pw, setPw] = useState({ current: '', next: '' });
   const [nu, setNu] = useState({ email: '', name: '', password: '', role: 'staff' });
-  const owner = me?.role === 'owner';
+  const [edit, setEdit] = useState<(User & { password: string }) | null>(null);
+  const master = me?.role === 'master';
 
   const load = useCallback(() => {
-    if (owner) api<User[]>('GET', '/api/admin/users').then(setUsers);
-  }, [owner]);
+    if (master) api<User[]>('GET', '/api/admin/users').then(setUsers);
+  }, [master]);
   useEffect(load, [load]);
 
   const run = async (fn: () => Promise<unknown>, msg: string) => {
@@ -60,39 +63,79 @@ export default function AccountPage() {
         </form>
       </section>
 
-      {owner && (
-        <>
+      {master && (
           <section className="card">
             <h2>{t('People who can sign in')}</h2>
-            <p className="muted small">{t('Staff can mark dishes sold out and change prices. Owners can change everything.')}</p>
+            <p className="muted small">
+              {t('Staff can mark dishes sold out and change prices. Admins can change everything on the site. The master admin can also add, edit and remove accounts.')}
+            </p>
             <ul className="items">
-              {users.map((u) => (
-                <li key={u.id} className="item-row">
-                  <div className="item-main">
-                    <b>{u.name || u.email}</b>
-                    <span className="muted small">
-                      {u.email} · {u.role === 'owner' ? t('Owner') : t('Staff')}
-                    </span>
-                  </div>
-                  {u.id !== me?.uid && (
-                    <div className="row-wrap tight">
-                      <button
-                        className="btn small ghost"
-                        onClick={() => {
-                          const p = prompt(t('New password for {email} (8+ characters)', { email: u.email }));
-                          if (p) run(() => api('PATCH', `/api/admin/users/${u.id}`, { password: p }), 'Password reset');
-                        }}
-                      >
-                        {t('Reset password')}
-                      </button>
-                      <button className="btn small danger" onClick={() => confirm(t('Remove {email}?', { email: u.email })) && run(() => api('DELETE', `/api/admin/users/${u.id}`), 'Account removed')}>
-                        {t('Remove')}
-                      </button>
+              {users.map((u) =>
+                edit?.id === u.id ? (
+                  <li key={u.id} className="item-row">
+                    <form
+                      className="form grid2 add-user"
+                      style={{ flex: 1 }}
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const { id, password, ...rest } = edit;
+                        if (await run(() => api('PATCH', `/api/admin/users/${id}`, password ? { ...rest, password } : rest), 'Account updated')) setEdit(null);
+                      }}
+                    >
+                      <label>
+                        {t('Name')}
+                        <input value={edit.name ?? ''} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
+                      </label>
+                      <label>
+                        {t('Email')}
+                        <input type="email" value={edit.email} onChange={(e) => setEdit({ ...edit, email: e.target.value })} required />
+                      </label>
+                      <label>
+                        {t('New password (leave empty to keep it)')}
+                        <input type="text" minLength={8} value={edit.password} onChange={(e) => setEdit({ ...edit, password: e.target.value })} />
+                      </label>
+                      <label>
+                        {t('Role')}
+                        <select value={edit.role} disabled={u.id === me?.uid} onChange={(e) => setEdit({ ...edit, role: e.target.value as Role })}>
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {t(ROLE_LABEL[r])}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="row-wrap tight">
+                        <button className="btn primary">{t('Save')}</button>
+                        <button type="button" className="btn ghost" onClick={() => setEdit(null)}>
+                          {t('Cancel')}
+                        </button>
+                      </div>
+                    </form>
+                  </li>
+                ) : (
+                  <li key={u.id} className="item-row">
+                    <div className="item-main">
+                      <b>{u.name || u.email}</b>
+                      <span className="muted small">
+                        {u.email} · {t(ROLE_LABEL[u.role])}
+                        {u.id === me?.uid ? ` · ${t('you')}` : ''}
+                      </span>
                     </div>
-                  )}
-                </li>
-              ))}
+                    <div className="row-wrap tight">
+                      <button className="btn small ghost" onClick={() => setEdit({ ...u, name: u.name ?? '', password: '' })}>
+                        {t('Edit')}
+                      </button>
+                      {u.id !== me?.uid && (
+                        <button className="btn small danger" onClick={() => confirm(t('Remove {email}?', { email: u.email })) && run(() => api('DELETE', `/api/admin/users/${u.id}`), 'Account removed')}>
+                          {t('Remove')}
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ),
+              )}
             </ul>
+            <h2>{t('Add an account')}</h2>
             <form
               className="form grid2 add-user"
               onSubmit={async (e) => {
@@ -115,8 +158,11 @@ export default function AccountPage() {
               <label>
                 {t('Role')}
                 <select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value })}>
-                  <option value="staff">{t('Staff')}</option>
-                  <option value="owner">{t('Owner')}</option>
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {t(ROLE_LABEL[r])}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div>
@@ -124,6 +170,10 @@ export default function AccountPage() {
               </div>
             </form>
           </section>
+      )}
+
+      {isAdmin(me) && (
+        <>
           <section className="card">
             <h2>{t('Backup')}</h2>
             <p className="muted small">{t('Download the whole menu, settings and photos as one file. Keep a copy now and then.')}</p>

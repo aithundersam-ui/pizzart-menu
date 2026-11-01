@@ -3,7 +3,7 @@ import { SignJWT, jwtVerify } from 'jose';
 export const SESSION_COOKIE = 'pizzart_session';
 const SESSION_HOURS = 24 * 14;
 
-export type Session = { uid: number; email: string; role: 'owner' | 'staff' };
+export type Session = { uid: number; email: string; role: 'master' | 'owner' | 'staff' };
 
 function secret() {
   const s = process.env.AUTH_SECRET;
